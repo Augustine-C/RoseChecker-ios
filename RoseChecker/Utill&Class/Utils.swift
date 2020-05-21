@@ -84,12 +84,7 @@ class CalParser{
         }catch{
             print(error)
         }
-//
-//
-//        guard let dataString = try? String(contentsOf: url, encoding: .utf8) else {
-//            print("can not read data")
-//            return []
-//        }
+
         print(dataString)
         var events = [Event]()
         let characterSet = CharacterSet(charactersIn: "\n\r")

@@ -14,8 +14,8 @@
             filePath = "RoseChecker/Utill&amp;Class/Utils.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "93"
-            endingLineNumber = "93"
+            startingLineNumber = "88"
+            endingLineNumber = "88"
             landmarkName = "parse(_:)"
             landmarkType = "7">
          </BreakpointContent>

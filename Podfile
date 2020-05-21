@@ -13,6 +13,7 @@ target 'RoseChecker' do
   pod 'GoogleSignIn'
   pod 'FirebaseUI/Google'
   pod 'Floaty', '~> 4.2.0'
+  pod 'MDatePickerView'
   # add pods for any other desired Firebase products
   # https://firebase.google.com/docs/ios/setup#available-pods
 

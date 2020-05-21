@@ -11,6 +11,7 @@ import SwiftUI
 import Firebase
 import Floaty
 import GoogleUtilities
+import MDatePickerView
 
 class MasterViewController: UITableViewController {
     var temp = 0
@@ -24,7 +25,7 @@ class MasterViewController: UITableViewController {
     var tempStartDate = Date()
     var tempEndDate = Date()
     var alertController = UIAlertController(title: "Create a new Meeting event", message: "", preferredStyle: .alert)
-
+    let showAll = FloatyItem()
 
     
     @IBOutlet weak var prevButton: UIBarButtonItem!
@@ -40,6 +41,12 @@ class MasterViewController: UITableViewController {
         let text = isShowingAll ? "Show day by day" : "Show all events"
         return text
     }
+
+    func titleText() -> String{
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM/dd/yyyy"
+        return isShowingAll ? "All Events" : dateFormatter.string(from: currentDate)
+    }
     
     func showDeleteMessage() -> (String, UIImage) {
         return !isEditing ? ("Select event to delete", UIImage(systemName: "pencil.circle.fill")!) : ("Done editing", UIImage(systemName: "checkmark.circle.fill")!)
@@ -49,7 +56,9 @@ class MasterViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         navigationItem.leftBarButtonItem =  prevButton
+        self.navigationItem.title = self.titleText()
         
+        floaty.paddingY = 30
         floaty.friendlyTap = true
         navigationItem.rightBarButtonItem = nextButton
         floaty.isDraggable = true
@@ -58,7 +67,7 @@ class MasterViewController: UITableViewController {
         floaty.paddingX = 30
         floaty.animationSpeed = 0.05
         let removeItem = FloatyItem()
-        removeItem.title = "remove all events"
+        removeItem.title = "remove all imported events"
         removeItem.icon = .remove
         removeItem.titleColor = .systemRed
         removeItem.handler = { item in
@@ -90,20 +99,34 @@ class MasterViewController: UITableViewController {
         floaty.addItem(item: removeItem)
         
         
+        floaty.addItem("pick a date", icon:UIImage(systemName: "calendar.circle")){(item) in
+            self.setupDatePicker()
+            self.floaty.close()
+            
+        }
+        
+        
         floaty.addItem("import events", icon: .add, handler: {item in
             
             self.importFile()
             self.floaty.close()
         })
         
-        floaty.addItem(showUserMessage(), icon: UIImage(systemName: "calendar.circle.fill"), handler: {item in
+        
+        showAll.icon = UIImage(systemName: "calendar.circle.fill")
+        showAll.title = showUserMessage()
+        showAll.handler = {(item) in
             self.isShowingAll.toggle()
             // update the list
             
             self.startListening()
             item.title = self.showUserMessage()
+            self.navigationItem.title = self.titleText()
             self.floaty.close()
-        })
+            
+        }
+        
+        floaty.addItem(item : showAll)
         
         let(deleteMessage, deleteIcon) = showDeleteMessage()
         floaty.addItem(deleteMessage, icon: deleteIcon) { (item) in
@@ -151,47 +174,25 @@ class MasterViewController: UITableViewController {
         return newImage!
     }
     
-    @objc func showMenu(){
-        let menuController = UIAlertController(title: "Menu",
-        message: "",
-        preferredStyle: .actionSheet)
-        let submitAction = UIAlertAction(title: "Import Events", style: .default) {(action) in
-            self.importFile()
-            
-        }
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
-        
-        let logoutAction = UIAlertAction(title: "Logout", style: .destructive) { (action) in
-            do{
-                try Auth.auth().signOut()
-            } catch{
-                print("there is something wrong")
-            }
-        }
-        let showDeleteMessage = !isEditing ? "Select event to delete" : "Done editing"
-        let delete = UIAlertAction(title: showDeleteMessage, style: .default){ (action) in
-            self.setEditing(!self.isEditing, animated: true)
-        }
-        
-        
-        
-        let showUserMessage = isShowingAll ? "Show day by day" : "Show all events"
-        let showToday = UIAlertAction(title: showUserMessage, style: .default) { (action) in
-            // toggle the show all vs show mine mode
-            self.isShowingAll.toggle()
-            // update the list
-            
-            self.startListening()
-        }
-        
-        menuController.addAction(submitAction)
-        menuController.addAction(delete)
-        menuController.addAction(showToday)
-        menuController.addAction(logoutAction)
-        menuController.addAction(cancelAction)
-
-        
-        present(menuController, animated: true, completion: nil)
+    
+    func setupDatePicker(){
+        view.addSubview(MDate)
+                NSLayoutConstraint.activate([
+                    MDate.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 0),
+                    MDate.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 0),
+                    MDate.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.7),
+                    MDate.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.4)
+                ])
+                
+        view.addSubview(Today)
+        Today.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -40).isActive = true
+        Today.topAnchor.constraint(equalTo: MDate.bottomAnchor, constant: 20).isActive = true
+        view.addSubview(CancelButton)
+        CancelButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 40).isActive = true
+        CancelButton.topAnchor.constraint(equalTo: MDate.bottomAnchor, constant: 20).isActive = true
+//        view.addSubview(Label)
+//        Label.topAnchor.constraint(equalTo: Today.bottomAnchor, constant: 30).isActive = true
+//        Label.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 0).isActive = true
     }
     
     
@@ -414,6 +415,7 @@ class MasterViewController: UITableViewController {
         dateComponent.day = 1;
         let nextDate = calendar.date(byAdding: dateComponent, to: currentDate)
         currentDate = nextDate!
+        self.navigationItem.title = self.titleText()
         startListening()
     }
     
@@ -423,6 +425,7 @@ class MasterViewController: UITableViewController {
         dateComponent.day = -1;
         let nextDate = calendar.date(byAdding: dateComponent, to: currentDate)
         currentDate = nextDate!
+        self.navigationItem.title = self.titleText()
         startListening()
     }
     
@@ -435,6 +438,55 @@ class MasterViewController: UITableViewController {
             }
         }
     }
+    
+    lazy var MDate : MDatePickerView = {
+        let mdate = MDatePickerView()
+        mdate.delegate = self
+        mdate.Color = UIColor(red: 0/255, green: 178/255, blue: 113/255, alpha: 1)
+        mdate.cornerRadius = 14
+        mdate.translatesAutoresizingMaskIntoConstraints = false
+        mdate.from = 1920
+        mdate.to = 2050
+        return mdate
+    }()
+    
+    var Today : UIButton = {
+        let but = UIButton(type:.system)
+        but.setTitle("Today", for: .normal)
+        but.addTarget(self, action: #selector(today), for: .touchUpInside)
+        but.translatesAutoresizingMaskIntoConstraints = false
+        return but
+    }()
+    
+    var CancelButton : UIButton = {
+        let but = UIButton(type:.system)
+        but.setTitle("cancel", for: .normal)
+        but.addTarget(self, action: #selector(cancelPicker), for: .touchUpInside)
+        but.translatesAutoresizingMaskIntoConstraints = false
+        return but
+    }()
+    
+    var Label : UILabel = {
+        let label = UILabel()
+        label.textColor = .white
+        label.font = UIFont.boldSystemFont(ofSize: 32)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    @objc func today() {
+        MDate.selectDate = Date()
+    }
+    
+    @objc func cancelPicker(){
+        self.MDate.removeFromSuperview()
+        self.CancelButton.removeFromSuperview()
+        self.Label.removeFromSuperview()
+        self.Today.removeFromSuperview()
+    }
+    
+    
+    
 
 }
 
@@ -506,7 +558,23 @@ extension MasterViewController: UIDocumentPickerDelegate{
             print(error)
         }
     }
-    
-    
+
+}
+
+extension MasterViewController : MDatePickerViewDelegate {
+    public func mdatePickerView(selectDate: Date) {
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy - MM - dd"
+        let date = formatter.string(from: selectDate)
+        Label.text = date
+        self.isShowingAll = false
+        // update the list
+        self.currentDate = selectDate
+        self.startListening()
+        self.showAll.title = showUserMessage()
+        self.navigationItem.title = self.titleText()
+
+    }
 }
 
